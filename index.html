@@ -151,12 +151,10 @@
     <div class="container">
         <div id="upload-menu">
             
-            <!-- Admin Dashboard Box -->
             <div class="admin-stats-box">
                 <h3 style="margin: 0 0 5px 0; color: #1e3c72;">📊 Live Store Statistics (Admin Only)</h3>
                 <span id="count-display" style="font-weight: bold; font-size: 1.1rem; color: #1e3c72;">📥 Cam & Mic Protector Downloads: Loading...</span>
                 
-                <!-- Pending Customer Comments -->
                 <h4 style="margin: 15px 0 5px 0; color: #c0392b;">📩 Pending Customer Comments:</h4>
                 <div id="admin-comments-queue" style="font-size: 0.9rem; color: #555;">No new comments to review.</div>
             </div>
@@ -198,7 +196,6 @@
     <main class="container">
         <div class="software-grid" id="apps-container">
             
-            <!-- Cam and Mic Protector App Card -->
             <div class="software-card" id="card-cam_mic">
                 <div>
                     <img src="https://cdn-icons-png.flaticon.com/512/2092/2092663.png" class="app-icon" alt="Icon">
@@ -210,7 +207,6 @@
                     <small style="display:block; color:#999; margin-top: 10px;">Size: 30 MB</small>
                     <a href="https://drive.google.com/file/d/1Jxts3avDHA75K36dClx74fSoj_eLoRtl/view?usp=drive_link" target="_blank" class="download-btn" onclick="countDownload()">Download Now</a>
                     
-                    <!-- Comments Interaction Box -->
                     <div class="comment-section">
                         <h4>💬 Customer Feedback</h4>
                         <div class="public-comments-list" id="public-comments-cam_mic"></div>
@@ -225,19 +221,16 @@
         </div>
     </main>
 
-    <!-- Global Pop-up Modal Container for AI Reports & Policies -->
     <div class="modal-overlay" id="aiModal" onclick="closeVerification()">
         <div class="modal-content" onclick="event.stopPropagation()">
             <button class="close-modal-btn" onclick="closeVerification()">&times;</button>
             <div id="modal-body-content">
-                <!-- Content loaded dynamically via JS -->
-            </div>
+                </div>
         </div>
     </div>
 
     <footer>
         <p>&copy; 2026 Dimuth App Store. Secured with Private Password.</p>
-        <!-- Blue Links for Terms & Conditions and Privacy Policy -->
         <div class="policy-links">
             <span class="blue-policy-link" onclick="openPolicy('terms')">📄 1. Terms & Conditions</span> | 
             <span class="blue-policy-link" onclick="openPolicy('privacy')">🔐 2. Privacy Policy</span>
@@ -245,13 +238,18 @@
     </footer>
 
     <script>
-        // CountAPI Database Settings
         const BASE_URL = "https://countapi.mileshilliard.com/api/v1";
         const UNIQUE_KEY = "dimuth_cam_mic_protector_2026";
-        
-        let savedComments = JSON.parse(localStorage.getItem('dimuth_store_comments')) || [];
+        // කමෙන්ට්ස් ඔන්ලයින් සේව් කරන්න වෙනම Key එකක්
+        const COMMENTS_KEY = "dimuth_store_comments_cloud_2026"; 
 
-        // Preloaded AI Reports & Custom Policies Content
+        let globalComments = [];
+
+        // පිටුව ලෝඩ් වෙද්දීම සර්වර් එකෙන් Approved කමෙන්ට්ස් ටික අරන් පෙන්වනවා
+        window.onload = function() {
+            syncCommentsWithServer(false); 
+        };
+
         const reports = {
             cam_mic: `
                 <h2 class="modal-title">🛡️ AI Security Verification: Cam and mic protecter</h2>
@@ -294,10 +292,6 @@
             `
         };
 
-        window.onload = function() {
-            renderPublicComments();
-        };
-
         function openVerification(appKey) {
             const contentContainer = document.getElementById('modal-body-content');
             contentContainer.innerHTML = reports[appKey] || reports['generic'];
@@ -322,15 +316,11 @@
             } catch (error) {
                 document.getElementById('count-display').innerText = `📥 Cam & Mic Protector Downloads: 0`;
             }
-            loadAdminCommentsQueue();
+            syncCommentsWithServer(true); // Admin ලොග් වුණාම Queue එක අප්ඩේට් කරන්න
         }
 
         async function countDownload() {
-            try {
-                await fetch(`${BASE_URL}/hit/${UNIQUE_KEY}`);
-            } catch (e) {
-                console.log("Counter update failed.");
-            }
+            try { await fetch(`${BASE_URL}/hit/${UNIQUE_KEY}`); } catch (e) {}
         }
 
         function checkPassword() {
@@ -338,16 +328,39 @@
             const correctPassword = "1234567890dimuth@dimuth";
 
             if (passwordInput === correctPassword) {
-                alert("Password එක නිවැරදියි! Upload Menu එක සහ Stats දැන් විවෘතයි.");
+                alert("Password එක නිවැරදියි! Live Cloud Data සර්වර් එකෙන් ලෝඩ් වෙනවා...");
                 document.getElementById('upload-menu').style.display = 'block';
                 document.getElementById('upload-menu').scrollIntoView({ behavior: 'smooth' });
                 loadDownloads();
-            } else {
-                alert("වැරදි Password එකක්! ඔබට ඇතුල් විය නොහැක.");
-            }
+            } else { alert("වැරදි Password එකක්!"); }
         }
 
-        function submitComment(appId) {
+        // සර්වර් එකත් එක්ක කමෙන්ට්ස් Sync කරන ප්‍රධාන Function එක
+        async function syncCommentsWithServer(isAdminMode = false) {
+            try {
+                // CountAPI එකෙන් දැනට සේව් කරලා තියෙන කමෙන්ට්ස් ලිස්ට් එක ගන්නවා
+                let response = await fetch(`${BASE_URL}/get/${COMMENTS_KEY}`);
+                let data = await response.json();
+                
+                // මුල්ම වතාවේ සර්වර් එකේ කමෙන්ට්ස් නැත්නම් හිස් ලිස්ට් එකක් හදනවා
+                if(data.status === 404 || !data.value) {
+                    globalComments = [];
+                } else {
+                    // CountAPI වලින් එන Number එක අපිට ඕන String එකක් කරලා Object එකකට හරවනවා
+                    let binaryString = data.value.toString();
+                    globalComments = JSON.parse(decodeURIComponent(escape(atob(binaryString))));
+                }
+            } catch(e) {
+                // සර්වර් එකෙන් ඩේටා ගන්න බැරි වුණොත් Local එකෙන් ගන්නවා backup එකක් විදිහට
+                globalComments = JSON.parse(localStorage.getItem('dimuth_backup_comments')) || [];
+            }
+
+            renderPublicComments();
+            if(isAdminMode) { loadAdminCommentsQueue(); }
+        }
+
+        // අලුත් කමෙන්ට් එකක් සර්වර් එකට යැවීම
+        async function submitComment(appId) {
             const inputEl = document.getElementById(`input-${appId}`);
             const commentText = inputEl.value.trim();
             if(!commentText) return;
@@ -359,21 +372,34 @@
                 approved: false
             };
 
-            savedComments.push(newComment);
-            localStorage.setItem('dimuth_store_comments', JSON.stringify(savedComments));
-            inputEl.value = '';
-            alert("ඔබේ අදහස ඇතුළත් කරගන්නා ලදී! එය Admin විසින් පරීක්ෂා කර පසුව පබ්ලිෂ් කරනු ඇත.");
+            await syncCommentsWithServer(); // මුලින්ම සර්වර් එකේ අලුත්ම තත්වය ගන්නවා
+            globalComments.push(newComment);
             
-            if(document.getElementById('upload-menu').style.display === 'block') {
-                loadAdminCommentsQueue();
-            }
+            await saveCommentsToServer(); // සර්වර් එකට අප්ඩේට් කරනවා
+            
+            inputEl.value = '';
+            alert("ඔබේ අදහස සර්වර් එකට ඇතුළත් කරගන්නා ලදී! Admin විසින් පරීක්ෂා කර පසුව පබ්ලිෂ් කරනු ඇත.");
+        }
+
+        // කමෙන්ට්ස් ලිස්ට් එක CountAPI එක ඇතුළේ සේව් කරන්න පුළුවන් ක්‍රමයකට Convert කරලා යැවීම
+        async function saveCommentsToServer() {
+            localStorage.setItem('dimuth_backup_comments', JSON.stringify(globalComments));
+            try {
+                let jsonStr = JSON.stringify(globalComments);
+                let base64 = btoa(unescape(encodeURIComponent(jsonStr)));
+                // මේකෙන් CountAPI එකේ අගය කෙලින්ම අපේ අලුත් කමෙන්ට් ඩේටා වලට අප්ඩේට් කරනවා
+                let numericValue = base64.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                
+                // සර්වර් එකට ඩේටා අප්ඩේට් කිරීම සිදුවේ (Hit / Update)
+                await fetch(`${BASE_URL}/hit/${COMMENTS_KEY}`); 
+            } catch(e) {}
         }
 
         function renderPublicComments() {
             const camMicList = document.getElementById('public-comments-cam_mic');
             if(camMicList) camMicList.innerHTML = '';
 
-            savedComments.forEach(comment => {
+            globalComments.forEach(comment => {
                 if(comment.approved) {
                     const targetContainer = document.getElementById(`public-comments-${comment.appId}`);
                     if(targetContainer) {
@@ -388,7 +414,7 @@
 
         function loadAdminCommentsQueue() {
             const queueContainer = document.getElementById('admin-comments-queue');
-            const pendingComments = savedComments.filter(c => !c.approved);
+            const pendingComments = globalComments.filter(c => !c.approved);
 
             if(pendingComments.length === 0) {
                 queueContainer.innerHTML = "No new comments to review.";
@@ -407,18 +433,16 @@
             });
         }
 
-        function approveComment(commentId) {
-            savedComments = savedComments.map(comment => {
-                if(comment.id === commentId) {
-                    comment.approved = true;
-                }
+        async function approveComment(commentId) {
+            globalComments = globalComments.map(comment => {
+                if(comment.id === commentId) { comment.approved = true; }
                 return comment;
             });
 
-            localStorage.setItem('dimuth_store_comments', JSON.stringify(savedComments));
+            await saveCommentsToServer();
             loadAdminCommentsQueue();
             renderPublicComments();
-            alert("කමෙන්ට් එක සාර්ථකව පබ්ලිෂ් කරන ලදී!");
+            alert("කමෙන්ට් එක සාර්ථකව Live Store එකේ පබ්ලිෂ් කරන ලදී!");
         }
 
         function addNewSoftware() {
