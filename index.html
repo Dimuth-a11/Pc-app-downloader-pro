@@ -35,9 +35,16 @@
         .form-group input, .form-group textarea {
             width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;
         }
+        
         .submit-btn {
             background: #28a745; color: white; border: none; padding: 10px 20px;
-            border-radius: 5px; font-weight: bold; cursor: pointer; width: 100%;
+            border-radius: 5px; font-weight: bold; cursor: pointer; width: 100%; text-align: center; margin-top: 10px;
+        }
+
+        /* Admin Stats Dashboard Box */
+        .admin-stats-box {
+            background: #eef2f7; padding: 15px; border-radius: 5px; margin-bottom: 25px;
+            border-left: 5px solid #1e3c72;
         }
 
         /* Software Grid Layout */
@@ -80,6 +87,12 @@
 
     <div class="container">
         <div id="upload-menu">
+            
+            <div class="admin-stats-box">
+                <h3 style="margin: 0 0 5px 0; color: #1e3c72;">📊 Live Store Statistics (Admin Only)</h3>
+                <span id="count-display" style="font-weight: bold; font-size: 1.1rem; color: #1e3c72;">📥 Cam & Mic Protector Downloads: Loading...</span>
+            </div>
+
             <h2>📤 Add New Software (Admin Menu)</h2>
             <div class="form-group">
                 <label>App Name (නම):</label>
@@ -109,7 +122,8 @@
                 <label>Download Link (Google Drive / Mega):</label>
                 <input type="text" id="appLink" placeholder="https://drive.google.com/...">
             </div>
-            <button class="submit-btn" onclick="addNewSoftware()">Publish App to Page</button>
+            
+            <button class="submit-btn" onclick="addNewSoftware()">🚀 Publish App to Page</button>
         </div>
     </div>
 
@@ -121,7 +135,8 @@
                 <h3>Cam and mic protecter</h3>
                 <p>This is app that give you basic camera and mic protection</p>
                 <small style="display:block; color:#999;">Size: 30 MB</small>
-                <a href="https://drive.google.com/file/d/1Jxts3avDHA75K36dClx74fSoj_eLoRtl/view?usp=drive_link" target="_blank" class="download-btn">Download Now</a>
+                
+                <a href="https://drive.google.com/file/d/1Jxts3avDHA75K36dClx74fSoj_eLoRtl/view?usp=drive_link" target="_blank" class="download-btn" onclick="countDownload()">Download Now</a>
             </div>
 
         </div>
@@ -132,21 +147,48 @@
     </footer>
 
     <script>
-        // Password එක පරීක්ෂා කිරීමේ ක්‍රියාවලිය
+        // CountAPI Setup
+        const BASE_URL = "https://countapi.mileshilliard.com/api/v1";
+        const UNIQUE_KEY = "dimuth_cam_mic_protector_2026";
+
+        // Admin කෙනෙක් පාස්වර්ඩ් ගහලා ඇතුල් වුණාම විතරක් Downloads ගණන සර්වර් එකෙන් අරන් පෙන්වීම
+        async function loadDownloads() {
+            try {
+                let response = await fetch(`${BASE_URL}/get/${UNIQUE_KEY}`);
+                let data = await response.json();
+                document.getElementById('count-display').innerText = `📥 Cam & Mic Protector Downloads: ${data.value || 0}`;
+            } catch (error) {
+                document.getElementById('count-display').innerText = `📥 Cam & Mic Protector Downloads: 0`;
+            }
+        }
+
+        // යූසර් කෙනෙක් බටන් එක ක්ලික් කරද්දී රහසිගතව සර්වර් එකේ Count එක 1කින් වැඩි වීම
+        async function countDownload() {
+            try {
+                await fetch(`${BASE_URL}/hit/${UNIQUE_KEY}`);
+            } catch (e) {
+                console.log("Counter update failed.");
+            }
+        }
+
+        // Password එක පරීක්ෂා කිරීම සහ Admin Upload Menu එක විවෘත කිරීම
         function checkPassword() {
             const passwordInput = prompt("කරුණාකර Admin Password එක ඇතුළත් කරන්න:");
             const correctPassword = "1234567890dimuth@dimuth";
 
             if (passwordInput === correctPassword) {
-                alert("Password එක නිවැරදියි! Upload Menu එක දැන් විවෘතයි.");
+                alert("Password එක නිවැරදියි! Upload Menu එක සහ Stats දැන් විවෘතයි.");
                 document.getElementById('upload-menu').style.display = 'block';
                 document.getElementById('upload-menu').scrollIntoView({ behavior: 'smooth' });
+                
+                // ඇතුල් වූ සැනින් Downloads ගණන Load කිරීම
+                loadDownloads();
             } else {
                 alert("වැරදි Password එකක්! ඔබට ඇතුල් විය නොහැක.");
             }
         }
 
-        // අලුත් Software එකක් Page එකට එකතු කිරීම (තාවකාලිකව පෙන්වීමට)
+        // අලුත් Software එකක් Page එකට නිල වශයෙන් එකතු කිරීම
         function addNewSoftware() {
             const name = document.getElementById('appName').value;
             const icon = document.getElementById('appIcon').value || "https://cdn-icons-png.flaticon.com/512/4144/4144776.png";
@@ -157,26 +199,17 @@
             const link = document.getElementById('appLink').value;
 
             if(!name || !desc || !link) {
-                alert("කරුණාකර නම, විස්තරය සහ ඩවුන්ලෝඩ් ลින්ක් එක අනිවාර්යයෙන්ම පුරවන්න.");
+                alert("කරුණාකර නම, විස්තරය සහ ඩවුන්ලෝඩ් ලින්ක් එක අනිවාර්යයෙන්ම පුරවන්න.");
                 return;
             }
 
-            let screenHTML = '';
-            if(screenshot) {
-                screenHTML = `
-                    <div class="screenshot-gallery">
-                        <img src="${screenshot}" class="screenshot-img" alt="Screenshot">
-                    </div>`;
-            }
-
+            let screenHTML = screenshot ? `<div class="screenshot-gallery"><img src="${screenshot}" class="screenshot-img" alt="Screenshot"></div>` : '';
+            
             let videoHTML = '';
             if(video) {
                 let videoId = video.split('v=')[1] || video.split('/').pop();
                 if(videoId.includes('&')) { videoId = videoId.split('&')[0]; }
-                videoHTML = `
-                    <div class="video-container">
-                        <iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>
-                    </div>`;
+                videoHTML = `<div class="video-container"><iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe></div>`;
             }
 
             const container = document.getElementById('apps-container');
@@ -203,10 +236,8 @@
             document.getElementById('appSize').value = '';
             document.getElementById('appLink').value = '';
             
-            alert("සාර්ථකව එකතු කරගන්නා ลදී! (සටහන: මෙය ස්ථිරවම සේව් කිරීමට නම් මෙම විස්තර index.html කෝඩ් එක ඇතුළටම දාන්න.)");
+            alert("සාර්ථකව එකතු කරගන්නා ලදී! (සටහන: මෙය ස්ථිරවම සේව් කිරීමට නම් මෙම විස්තර index.html කෝඩ් එක ඇතුළටම දාන්න.)");
         }
     </script>
-</body>
-</html>
 </body>
 </html>
