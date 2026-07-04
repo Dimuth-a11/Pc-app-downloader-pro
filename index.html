@@ -46,6 +46,13 @@
             background: #eef2f7; padding: 15px; border-radius: 5px; margin-bottom: 25px;
             border-left: 5px solid #1e3c72;
         }
+        .admin-comment-item {
+            background: white; padding: 10px; border-radius: 5px; margin-top: 10px;
+            border: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center;
+        }
+        .approve-btn {
+            background: #007bff; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;
+        }
 
         /* Software Grid Layout */
         .software-grid {
@@ -60,6 +67,426 @@
         .app-icon { width: 70px; height: 70px; border-radius: 15px; object-fit: cover; margin: 0 auto; }
         .software-card h3 { color: #1e3c72; margin: 10px 0; }
         .software-card p { font-size: 0.95rem; color: #666; }
+        
+        /* AI Verification Link Style */
+        .ai-verif-link {
+            display: inline-block; color: #0056b3; text-decoration: none; font-weight: 600;
+            font-size: 0.9rem; margin: 10px 0; cursor: pointer; transition: color 0.2s;
+        }
+        .ai-verif-link:hover { text-decoration: underline; color: #003570; }
+
+        /* Comments Section Styles inside App Cards */
+        .comment-section {
+            margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px; text-align: left;
+        }
+        .comment-section h4 { margin: 0 0 10px 0; color: #1e3c72; font-size: 1rem; }
+        .public-comments-list { max-height: 120px; overflow-y: auto; margin-bottom: 10px; }
+        .comment-bubble {
+            background: #f1f3f5; padding: 8px 12px; border-radius: 15px; margin-bottom: 6px; font-size: 0.88rem;
+        }
+        .comment-input-box { display: flex; gap: 5px; }
+        .comment-input-box input {
+            flex: 1; padding: 6px; border: 1px solid #ccc; border-radius: 20px; font-size: 0.85rem; padding-left: 12px;
+        }
+        .comment-send-btn {
+            background: #1e3c72; color: white; border: none; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 0.85rem;
+        }
+
+        /* Screenshots & Video */
+        .screenshot-gallery { display: flex; gap: 10px; overflow-x: auto; padding: 10px 0; }
+        .screenshot-img { width: 120px; height: 70px; object-fit: cover; border-radius: 5px; }
+        .video-container {
+            position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; margin: 15px 0; border-radius: 5px;
+        }
+        .video-container iframe { position: absolute; top:0; left:0; width:100%; height:100%; }
+        
+        .download-btn {
+            display: inline-block; background: #28a745; color: white; text-decoration: none;
+            padding: 10px 25px; border-radius: 5px; font-weight: bold; margin-top: 15px;
+        }
+        
+        /* Footer & Blue Policy Links Styling */
+        footer { text-align: center; padding: 30px 20px; background: #222; color: white; font-size: 0.9rem; }
+        .policy-links { margin-top: 12px; }
+        .blue-policy-link {
+            color: #3498db; text-decoration: none; font-weight: bold; margin: 0 10px; cursor: pointer;
+        }
+        .blue-policy-link:hover { text-decoration: underline; color: #2980b9; }
+
+        /* Modal Pop-up System styles */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6); display: flex; align-items: center;
+            justify-content: center; z-index: 1000; opacity: 0; visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+        .modal-content {
+            background: white; width: 90%; max-width: 650px; max-height: 80vh;
+            border-radius: 12px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow-y: auto; position: relative; animation: slideUp 0.3s ease;
+        }
+        @keyframes slideUp { from { transform: translateY(20px); } to { transform: translateY(0); } }
+        .close-modal-btn {
+            position: absolute; top: 15px; right: 20px; font-size: 1.8rem;
+            background: none; border: none; color: #aaa; cursor: pointer;
+        }
+        .close-modal-btn:hover { color: #333; }
+        .modal-title { color: #1e3c72; margin-top: 0; display: flex; align-items: center; gap: 8px; }
+        .verification-text { line-height: 1.6; font-size: 0.95rem; text-align: left; }
+        .badge-score { background: #ffc107; color: #212529; padding: 4px 8px; border-radius: 5px; font-weight: bold; }
+        .section-tag { font-weight: bold; margin-top: 15px; display: block; color: #1e3c72; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <button class="admin-login-btn" onclick="checkPassword()">Admin Panel</button>
+        <div class="container">
+            <h1>💻 Dimuth App Store</h1>
+            <p>මම නිර්මාණය කළ සහ අප්ලෝඩ් කරන මෘදුකාංග මෙතැනින් ලබාගන්න</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <div id="upload-menu">
+            
+            <!-- Admin Dashboard Box -->
+            <div class="admin-stats-box">
+                <h3 style="margin: 0 0 5px 0; color: #1e3c72;">📊 Live Store Statistics (Admin Only)</h3>
+                <span id="count-display" style="font-weight: bold; font-size: 1.1rem; color: #1e3c72;">📥 Cam & Mic Protector Downloads: Loading...</span>
+                
+                <!-- Pending Customer Comments -->
+                <h4 style="margin: 15px 0 5px 0; color: #c0392b;">📩 Pending Customer Comments:</h4>
+                <div id="admin-comments-queue" style="font-size: 0.9rem; color: #555;">No new comments to review.</div>
+            </div>
+
+            <h2>📤 Add New Software (Admin Menu)</h2>
+            <div class="form-group">
+                <label>App Name (නම):</label>
+                <input type="text" id="appName" placeholder="e.g. My Super App">
+            </div>
+            <div class="form-group">
+                <label>App Icon URL (පින්තූර ලින්ක් එක):</label>
+                <input type="text" id="appIcon" placeholder="https://example.com/icon.png">
+            </div>
+            <div class="form-group">
+                <label>Description (විස්තරය):</label>
+                <textarea id="appDesc" rows="3" placeholder="App එක ගැන විස්තරයක්..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Screenshot URL (Ona nam pamanak):</label>
+                <input type="text" id="appScreenshot" placeholder="https://example.com/screen.png">
+            </div>
+            <div class="form-group">
+                <label>YouTube Video URL (Ona nam pamanak):</label>
+                <input type="text" id="appVideo" placeholder="https://www.youtube.com/watch?v=...">
+            </div>
+            <div class="form-group">
+                <label>File Size:</label>
+                <input type="text" id="appSize" placeholder="e.g. 45 MB">
+            </div>
+            <div class="form-group">
+                <label>Download Link (Google Drive / Mega):</label>
+                <input type="text" id="appLink" placeholder="https://drive.google.com/...">
+            </div>
+            
+            <button class="submit-btn" onclick="addNewSoftware()">🚀 Publish App to Page</button>
+        </div>
+    </div>
+
+    <main class="container">
+        <div class="software-grid" id="apps-container">
+            
+            <!-- Cam and Mic Protector App Card -->
+            <div class="software-card" id="card-cam_mic">
+                <div>
+                    <img src="https://cdn-icons-png.flaticon.com/512/2092/2092663.png" class="app-icon" alt="Icon">
+                    <h3>Cam and mic protecter</h3>
+                    <p>This is app that give you basic camera and mic protection</p>
+                    <span class="ai-verif-link" onclick="openVerification('cam_mic')">🛡️ View AI Security Verification</span>
+                </div>
+                <div>
+                    <small style="display:block; color:#999; margin-top: 10px;">Size: 30 MB</small>
+                    <a href="https://drive.google.com/file/d/1Jxts3avDHA75K36dClx74fSoj_eLoRtl/view?usp=drive_link" target="_blank" class="download-btn" onclick="countDownload()">Download Now</a>
+                    
+                    <!-- Comments Interaction Box -->
+                    <div class="comment-section">
+                        <h4>💬 Customer Feedback</h4>
+                        <div class="public-comments-list" id="public-comments-cam_mic"></div>
+                        <div class="comment-input-box">
+                            <input type="text" id="input-cam_mic" placeholder="Write a comment...">
+                            <button class="comment-send-btn" onclick="submitComment('cam_mic')">Send</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Global Pop-up Modal Container for AI Reports & Policies -->
+    <div class="modal-overlay" id="aiModal" onclick="closeVerification()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <button class="close-modal-btn" onclick="closeVerification()">&times;</button>
+            <div id="modal-body-content">
+                <!-- Content loaded dynamically via JS -->
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 Dimuth App Store. Secured with Private Password.</p>
+        <!-- Blue Links for Terms & Conditions and Privacy Policy -->
+        <div class="policy-links">
+            <span class="blue-policy-link" onclick="openPolicy('terms')">📄 1. Terms & Conditions</span> | 
+            <span class="blue-policy-link" onclick="openPolicy('privacy')">🔐 2. Privacy Policy</span>
+        </div>
+    </footer>
+
+    <script>
+        // CountAPI Database Settings
+        const BASE_URL = "https://countapi.mileshilliard.com/api/v1";
+        const UNIQUE_KEY = "dimuth_cam_mic_protector_2026";
+        
+        let savedComments = JSON.parse(localStorage.getItem('dimuth_store_comments')) || [];
+
+        // Preloaded AI Reports & Custom Policies Content
+        const reports = {
+            cam_mic: `
+                <h2 class="modal-title">🛡️ AI Security Verification: Cam and mic protecter</h2>
+                <hr style="border: 0; border-top: 1px solid #eee; margin-bottom: 15px;">
+                <div class="verification-text">
+                    <p><strong>Overall Evaluation Score:</strong> <span class="badge-score">7.5 / 10</span></p>
+                    <p>This application functions as a robust tracking defense layout monitoring windows access layers to critical hardware assets like recording mechanics.</p>
+                    <span class="section-tag">✅ Engineering Strengths:</span>
+                    <ul>
+                        <li><strong>Registry Layer Detection:</strong> Tracks Registry paths seamlessly via <code>CapabilityAccessManager\\ConsentStore</code> elements.</li>
+                    </ul>
+                </div>
+            `,
+            generic: `
+                <h2 class="modal-title">✨ AI Security Verification Pending</h2>
+                <hr style="border: 0; border-top: 1px solid #eee; margin-bottom: 15px;">
+                <div class="verification-text">
+                    <p>Automated codebase analysis routines are currently scanning execution logic structures.</p>
+                </div>
+            `,
+            terms: `
+                <h2 class="modal-title">📄 Terms & Conditions</h2>
+                <hr style="border: 0; border-top: 1px solid #eee; margin-bottom: 15px;">
+                <div class="verification-text">
+                    <p><span class="section-tag">🚫 What Users are NOT Allowed to Do:</span> You may not reverse-engineer, modify, redistribute as your own work, or use the execution binaries for illegal exploitation activities.</p>
+                    <p><span class="section-tag">⚠️ Disclaimer:</span> The developer is not responsible for any software conflict, system crash, unexpected operating system data loss, or physical hardware issues resulting from runtime operation.</p>
+                    <p><span class="section-tag">🔑 Permission Usage Explanation:</span> The software requires administrative privileges to query Windows registry paths (e.g., <code>CapabilityAccessManager</code>) and standard process structures to guard your devices.</p>
+                    <p><span class="section-tag">⚙️ Termination Rule:</span> The developer reserves the complete right to terminate system access, update distribution frameworks, or suspend deployment if abuse or critical reverse engineering attempts occur.</p>
+                </div>
+            `,
+            privacy: `
+                <h2 class="modal-title">🔐 Privacy Policy</h2>
+                <hr style="border: 0; border-top: 1px solid #eee; margin-bottom: 15px;">
+                <div class="verification-text">
+                    <p><span class="section-tag">📊 Data Collection:</span> We do not collect, harvest, or request any sensitive personal identity records, passwords, or hardware details.</p>
+                    <p><span class="section-tag">💾 Storage Location:</span> Public download totals are managed securely within remote CountAPI database structures. Approved anonymous customer reviews and layout parameters are stored securely inside your local web profile runtime space.</p>
+                    <p><span class="section-tag">🤝 Third-Party Data Sharing:</span> No user tracking reports or input comments are shared, rented, or distributed to third-party commercial databases.</p>
+                    <p><span class="section-tag">📈 Tracking & Logs:</span> The setup is free from third-party analytics code or telemetry scripts. It performs pure offline tracking tasks on your computer.</p>
+                </div>
+            `
+        };
+
+        window.onload = function() {
+            renderPublicComments();
+        };
+
+        function openVerification(appKey) {
+            const contentContainer = document.getElementById('modal-body-content');
+            contentContainer.innerHTML = reports[appKey] || reports['generic'];
+            document.getElementById('aiModal').classList.add('active');
+        }
+
+        function openPolicy(policyKey) {
+            const contentContainer = document.getElementById('modal-body-content');
+            contentContainer.innerHTML = reports[policyKey];
+            document.getElementById('aiModal').classList.add('active');
+        }
+
+        function closeVerification() {
+            document.getElementById('aiModal').classList.remove('active');
+        }
+
+        async function loadDownloads() {
+            try {
+                let response = await fetch(`${BASE_URL}/get/${UNIQUE_KEY}`);
+                let data = await response.json();
+                document.getElementById('count-display').innerText = `📥 Cam & Mic Protector Downloads: ${data.value || 0}`;
+            } catch (error) {
+                document.getElementById('count-display').innerText = `📥 Cam & Mic Protector Downloads: 0`;
+            }
+            loadAdminCommentsQueue();
+        }
+
+        async function countDownload() {
+            try {
+                await fetch(`${BASE_URL}/hit/${UNIQUE_KEY}`);
+            } catch (e) {
+                console.log("Counter update failed.");
+            }
+        }
+
+        function checkPassword() {
+            const passwordInput = prompt("කරුණාකර Admin Password එක ඇතුළත් කරන්න:");
+            const correctPassword = "1234567890dimuth@dimuth";
+
+            if (passwordInput === correctPassword) {
+                alert("Password එක නිවැරදියි! Upload Menu එක සහ Stats දැන් විවෘතයි.");
+                document.getElementById('upload-menu').style.display = 'block';
+                document.getElementById('upload-menu').scrollIntoView({ behavior: 'smooth' });
+                loadDownloads();
+            } else {
+                alert("වැරදි Password එකක්! ඔබට ඇතුල් විය නොහැක.");
+            }
+        }
+
+        function submitComment(appId) {
+            const inputEl = document.getElementById(`input-${appId}`);
+            const commentText = inputEl.value.trim();
+            if(!commentText) return;
+
+            const newComment = {
+                id: Date.now(),
+                appId: appId,
+                text: commentText,
+                approved: false
+            };
+
+            savedComments.push(newComment);
+            localStorage.setItem('dimuth_store_comments', JSON.stringify(savedComments));
+            inputEl.value = '';
+            alert("ඔබේ අදහස ඇතුළත් කරගන්නා ලදී! එය Admin විසින් පරීක්ෂා කර පසුව පබ්ලිෂ් කරනු ඇත.");
+            
+            if(document.getElementById('upload-menu').style.display === 'block') {
+                loadAdminCommentsQueue();
+            }
+        }
+
+        function renderPublicComments() {
+            const camMicList = document.getElementById('public-comments-cam_mic');
+            if(camMicList) camMicList.innerHTML = '';
+
+            savedComments.forEach(comment => {
+                if(comment.approved) {
+                    const targetContainer = document.getElementById(`public-comments-${comment.appId}`);
+                    if(targetContainer) {
+                        const bubble = document.createElement('div');
+                        bubble.className = 'comment-bubble';
+                        bubble.innerText = comment.text;
+                        targetContainer.appendChild(bubble);
+                    }
+                }
+            });
+        }
+
+        function loadAdminCommentsQueue() {
+            const queueContainer = document.getElementById('admin-comments-queue');
+            const pendingComments = savedComments.filter(c => !c.approved);
+
+            if(pendingComments.length === 0) {
+                queueContainer.innerHTML = "No new comments to review.";
+                return;
+            }
+
+            queueContainer.innerHTML = '';
+            pendingComments.forEach(comment => {
+                const item = document.createElement('div');
+                item.className = 'admin-comment-item';
+                item.innerHTML = `
+                    <div><strong>[App ID: ${comment.appId}]</strong> ${comment.text}</div>
+                    <button class="approve-btn" onclick="approveComment(${comment.id})">📢 Approve & Publish</button>
+                `;
+                queueContainer.appendChild(item);
+            });
+        }
+
+        function approveComment(commentId) {
+            savedComments = savedComments.map(comment => {
+                if(comment.id === commentId) {
+                    comment.approved = true;
+                }
+                return comment;
+            });
+
+            localStorage.setItem('dimuth_store_comments', JSON.stringify(savedComments));
+            loadAdminCommentsQueue();
+            renderPublicComments();
+            alert("කමෙන්ට් එක සාර්ථකව පබ්ලිෂ් කරන ලදී!");
+        }
+
+        function addNewSoftware() {
+            const name = document.getElementById('appName').value;
+            const icon = document.getElementById('appIcon').value || "https://cdn-icons-png.flaticon.com/512/4144/4144776.png";
+            const desc = document.getElementById('appDesc').value;
+            const screenshot = document.getElementById('appScreenshot').value;
+            const video = document.getElementById('appVideo').value;
+            const size = document.getElementById('appSize').value;
+            const link = document.getElementById('appLink').value;
+
+            if(!name || !desc || !link) {
+                alert("කරුණාකර නම, විස්තරය සහ ඩවුන්ලෝඩ් ලින්ක් එක අනිවාර්යයෙන්ම පුරවන්න.");
+                return;
+            }
+
+            const cleanId = name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+            let screenHTML = screenshot ? `<div class="screenshot-gallery"><img src="${screenshot}" class="screenshot-img" alt="Screenshot"></div>` : '';
+            
+            let videoHTML = '';
+            if(video) {
+                let videoId = video.split('v=')[1] || video.split('/').pop();
+                if(videoId.includes('&')) { videoId = videoId.split('&')[0]; }
+                videoHTML = `<div class="video-container"><iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe></div>`;
+            }
+
+            const container = document.getElementById('apps-container');
+            const card = document.createElement('div');
+            card.className = 'software-card';
+            card.id = `card-${cleanId}`;
+            card.innerHTML = `
+                <div>
+                    <img src="${icon}" class="app-icon" alt="App Icon">
+                    <h3>${name}</h3>
+                    <p>${desc}</p>
+                    <span class="ai-verif-link" onclick="openVerification('generic')">🛡️ View AI Security Verification</span>
+                    ${screenHTML}
+                    ${videoHTML}
+                </div>
+                <div>
+                    <small style="display:block; color:#999; margin-top:10px;">Size: ${size || 'Unknown'}</small>
+                    <a href="${link}" target="_blank" class="download-btn">Download Now</a>
+                    <div class="comment-section">
+                        <h4>💬 Customer Feedback</h4>
+                        <div class="public-comments-list" id="public-comments-${cleanId}"></div>
+                        <div class="comment-input-box">
+                            <input type="text" id="input-${cleanId}" placeholder="Write a comment...">
+                            <button class="comment-send-btn" onclick="submitComment('${cleanId}')">Send</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            container.insertBefore(card, container.firstChild);
+            
+            document.getElementById('appName').value = '';
+            document.getElementById('appIcon').value = '';
+            document.getElementById('appDesc').value = '';
+            document.getElementById('appScreenshot').value = '';
+            document.getElementById('appVideo').value = '';
+            document.getElementById('appSize').value = '';
+            document.getElementById('appLink').value = '';
+            
+            alert("සාර්ථකව එකතු කරගන්නා ලදී!");
+        }
+    </script>
+</body>
+</html>        .software-card p { font-size: 0.95rem; color: #666; }
         
         /* AI Verification Link Style */
         .ai-verif-link {
