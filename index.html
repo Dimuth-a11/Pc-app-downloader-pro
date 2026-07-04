@@ -70,7 +70,6 @@
 </head>
 <body>
 
-    <!-- Header Section with Secret Button -->
     <header>
         <button class="admin-login-btn" onclick="checkPassword()">Admin Panel</button>
         <div class="container">
@@ -79,7 +78,6 @@
         </div>
     </header>
 
-    <!-- Secret Upload Menu -->
     <div class="container">
         <div id="upload-menu">
             <h2>📤 Add New Software (Admin Menu)</h2>
@@ -115,27 +113,24 @@
         </div>
     </div>
 
-    <!-- Main App Grid -->
     <main class="container">
         <div class="software-grid" id="apps-container">
             
-            <!-- Default App (Sample) -->
             <div class="software-card">
-                <img src="https://cdn-icons-png.flaticon.com/512/732/732228.png" class="app-icon" alt="Icon">
-                <h3>Sample Browser</h3>
-                <p>මේක ඔයාගේ වෙබ් අඩවිය වැඩ කරන හැටි බලන්න දාපු Sample App එකක්.</p>
-                <small style="display:block; color:#999;">Size: 25 MB</small>
-                <a href="#" class="download-btn">Download Now</a>
+                <img src="https://drive.google.com/file/d/1l8qGZdyVrZmyuxKvDwVG0V7LwP6YtDXS/view?usp=drive_link" class="app-icon" alt="Icon">
+                <h3>Cam and mic protecter</h3>
+                <p>This is app that give you basic camera and mic protection</p>
+                <small style="display:block; color:#999;">Size: 95 MB</small>
+                <a href="https://drive.google.com/drive/folders/1nYOUL6CTCl39w3-N9M34a-HT-oSMwjsJ?usp=drive_link" target="_blank" class="download-btn">Download Now</a>
             </div>
 
-        </div>
+            </div>
     </main>
 
     <footer>
         <p>&copy; 2026 Dimuth App Store. Secured with Private Password.</p>
     </footer>
 
-    <!-- Logic Setup (JavaScript) -->
     <script>
         // Password එක පරීක්ෂා කිරීමේ ක්‍රියාවලිය
         function checkPassword() {
@@ -145,14 +140,13 @@
             if (passwordInput === correctPassword) {
                 alert("Password එක නිවැරදියි! Upload Menu එක දැන් විවෘතයි.");
                 document.getElementById('upload-menu').style.display = 'block';
-                // Upload Form එක තියෙන තැනට Scroll කිරීම
                 document.getElementById('upload-menu').scrollIntoView({ behavior: 'smooth' });
             } else {
                 alert("වැරදි Password එකක්! ඔබට ඇතුල් විය නොහැක.");
             }
         }
 
-        // අලුත් Software එකක් Page එකට එකතු කිරීම
+        // අලුත් Software එකක් Page එකට එකතු කිරීම (තාවකාලිකව පෙන්වීමට)
         function addNewSoftware() {
             const name = document.getElementById('appName').value;
             const icon = document.getElementById('appIcon').value || "https://cdn-icons-png.flaticon.com/512/4144/4144776.png";
@@ -163,11 +157,10 @@
             const link = document.getElementById('appLink').value;
 
             if(!name || !desc || !link) {
-                alert("කරුණාකර නම, විස්තරය සහ ඩවුන්ලෝඩ් ලින්ක් එක අනිවාර්යයෙන්ම පුරවන්න.");
+                alert("කරුණාකර නම, විස්තරය සහ ඩවුන්ලෝඩ් ลින්ක් එක අනිවාර්යයෙන්ම පුරවන්න.");
                 return;
             }
 
-            // Screenshot HTML සකස් කිරීම
             let screenHTML = '';
             if(screenshot) {
                 screenHTML = `
@@ -176,7 +169,6 @@
                     </div>`;
             }
 
-            // Video HTML සකස් කිරීම
             let videoHTML = '';
             if(video) {
                 let videoId = video.split('v=')[1] || video.split('/').pop();
@@ -187,7 +179,6 @@
                     </div>`;
             }
 
-            // අලුත් Card එකක් නිර්මාණය
             const container = document.getElementById('apps-container');
             const card = document.createElement('div');
             card.className = 'software-card';
@@ -201,7 +192,6 @@
                 <a href="${link}" target="_blank" class="download-btn">Download Now</a>
             `;
 
-            // Grid එකේ මුලටම එකතු කිරීම
             container.insertBefore(card, container.firstChild);
             
             // Form එක Clear කිරීම
@@ -213,7 +203,7 @@
             document.getElementById('appSize').value = '';
             document.getElementById('appLink').value = '';
             
-            alert("සාර්ථකව එකතු කරගන්නා ලදී!");
+            alert("සාර්ථකව එකතු කරගන්නා ලදී! (සටහන: මෙය ස්ථිරවම සේව් කිරීමට නම් මෙම විස්තර index.html කෝඩ් එක ඇතුළටම දාන්න.)");
         }
     </script>
 </body>
