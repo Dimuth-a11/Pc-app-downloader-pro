@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dimuth App Store</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         /* General Setup */
         body {
@@ -22,6 +23,7 @@
             position: absolute; top: 15px; right: 15px;
             background: rgba(255,255,255,0.2); color: white; border: none;
             padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 0.8rem;
+            z-index: 10;
         }
 
         /* Upload Menu (Hidden by Default) */
@@ -75,21 +77,24 @@
         }
         .ai-verif-link:hover { text-decoration: underline; color: #003570; }
 
-        /* Comments Section Styles inside App Cards */
+        /* Comments Section Styles */
         .comment-section {
             margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px; text-align: left;
         }
         .comment-section h4 { margin: 0 0 10px 0; color: #1e3c72; font-size: 1rem; }
-        .public-comments-list { max-height: 120px; overflow-y: auto; margin-bottom: 10px; }
+        .public-comments-list { max-height: 150px; overflow-y: auto; margin-bottom: 10px; }
         .comment-bubble {
-            background: #f1f3f5; padding: 8px 12px; border-radius: 15px; margin-bottom: 6px; font-size: 0.88rem;
+            background: #f1f3f5; padding: 8px 12px; border-radius: 10px; margin-bottom: 8px; font-size: 0.88rem;
         }
-        .comment-input-box { display: flex; gap: 5px; }
+        .comment-user-name { font-weight: bold; color: #1e3c72; display: block; margin-bottom: 2px; }
+        
+        /* Modern Comment Input Area */
+        .comment-input-box { display: flex; flex-direction: column; gap: 6px; }
         .comment-input-box input {
-            flex: 1; padding: 6px; border: 1px solid #ccc; border-radius: 20px; font-size: 0.85rem; padding-left: 12px;
+            width: 100%; padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.85rem; box-sizing: border-box;
         }
         .comment-send-btn {
-            background: #1e3c72; color: white; border: none; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 0.85rem;
+            background: #1e3c72; color: white; border: none; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: bold;
         }
 
         /* Screenshots & Video */
@@ -105,7 +110,7 @@
             padding: 10px 25px; border-radius: 5px; font-weight: bold; margin-top: 15px;
         }
         
-        /* Footer & Blue Policy Links Styling */
+        /* Footer & Blue Policy Links */
         footer { text-align: center; padding: 30px 20px; background: #222; color: white; font-size: 0.9rem; }
         .policy-links { margin-top: 12px; }
         .blue-policy-link {
@@ -113,7 +118,7 @@
         }
         .blue-policy-link:hover { text-decoration: underline; color: #2980b9; }
 
-        /* Modal Pop-up System styles */
+        /* Modal Pop-up System */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.6); display: flex; align-items: center;
@@ -155,8 +160,8 @@
                 <h3 style="margin: 0 0 5px 0; color: #1e3c72;">📊 Live Store Statistics (Admin Only)</h3>
                 <span id="count-display" style="font-weight: bold; font-size: 1.1rem; color: #1e3c72;">📥 Cam & Mic Protector Downloads: Loading...</span>
                 
-                <h4 style="margin: 15px 0 5px 0; color: #c0392b;">📩 Pending Customer Comments:</h4>
-                <div id="admin-comments-queue" style="font-size: 0.9rem; color: #555;">No new comments to review.</div>
+                <h4 style="margin: 15px 0 5px 0; color: #c0392b;">📩 Pending Customer Comments (Live Supabase):</h4>
+                <div id="admin-comments-queue" style="font-size: 0.9rem; color: #555;">No new comments to review on Supabase Cloud.</div>
             </div>
 
             <h2>📤 Add New Software (Admin Menu)</h2>
@@ -211,8 +216,9 @@
                         <h4>💬 Customer Feedback</h4>
                         <div class="public-comments-list" id="public-comments-cam_mic"></div>
                         <div class="comment-input-box">
-                            <input type="text" id="input-cam_mic" placeholder="Write a comment...">
-                            <button class="comment-send-btn" onclick="submitComment('cam_mic')">Send</button>
+                            <input type="text" id="name-cam_mic" placeholder="Your Name (ඔබේ නම)...">
+                            <input type="text" id="input-cam_mic" placeholder="Write a comment (අදහස)...">
+                            <button class="comment-send-btn" onclick="submitComment('cam_mic')">Send Feedback</button>
                         </div>
                     </div>
                 </div>
@@ -224,8 +230,7 @@
     <div class="modal-overlay" id="aiModal" onclick="closeVerification()">
         <div class="modal-content" onclick="event.stopPropagation()">
             <button class="close-modal-btn" onclick="closeVerification()">&times;</button>
-            <div id="modal-body-content">
-                </div>
+            <div id="modal-body-content"></div>
         </div>
     </div>
 
@@ -238,16 +243,26 @@
     </footer>
 
     <script>
+        // --- ⚙️ SUPABASE CONFIGURATION ---
+        const SUPABASE_URL = "https://ewbimluheequwlokmygn.supabase.co"; 
+        const SUPABASE_KEY = "sb_publishable_SLQdXpS9W9Wn14BmNwHM6A_hvMQ3usz"; 
+        
+        var mySupabaseClient = null;
+        try {
+            if (window.supabase && typeof window.supabase.createClient === 'function') {
+                mySupabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            }
+        } catch(e) {
+            console.error("Supabase fail:", e);
+        }
+
         const BASE_URL = "https://countapi.mileshilliard.com/api/v1";
         const UNIQUE_KEY = "dimuth_cam_mic_protector_2026";
-        // කමෙන්ට්ස් ඔන්ලයින් සේව් කරන්න වෙනම Key එකක්
-        const COMMENTS_KEY = "dimuth_store_comments_cloud_2026"; 
 
-        let globalComments = [];
-
-        // පිටුව ලෝඩ් වෙද්දීම සර්වර් එකෙන් Approved කමෙන්ට්ස් ටික අරන් පෙන්වනවා
         window.onload = function() {
-            syncCommentsWithServer(false); 
+            if (mySupabaseClient) {
+                loadApprovedComments(); 
+            }
         };
 
         const reports = {
@@ -276,8 +291,6 @@
                 <div class="verification-text">
                     <p><span class="section-tag">🚫 What Users are NOT Allowed to Do:</span> You may not reverse-engineer, modify, redistribute as your own work, or use the execution binaries for illegal exploitation activities.</p>
                     <p><span class="section-tag">⚠️ Disclaimer:</span> The developer is not responsible for any software conflict, system crash, unexpected operating system data loss, or physical hardware issues resulting from runtime operation.</p>
-                    <p><span class="section-tag">🔑 Permission Usage Explanation:</span> The software requires administrative privileges to query Windows registry paths (e.g., <code>CapabilityAccessManager</code>) and standard process structures to guard your devices.</p>
-                    <p><span class="section-tag">⚙️ Termination Rule:</span> The developer reserves the complete right to terminate system access, update distribution frameworks, or suspend deployment if abuse or critical reverse engineering attempts occur.</p>
                 </div>
             `,
             privacy: `
@@ -285,9 +298,6 @@
                 <hr style="border: 0; border-top: 1px solid #eee; margin-bottom: 15px;">
                 <div class="verification-text">
                     <p><span class="section-tag">📊 Data Collection:</span> We do not collect, harvest, or request any sensitive personal identity records, passwords, or hardware details.</p>
-                    <p><span class="section-tag">💾 Storage Location:</span> Public download totals are managed securely within remote CountAPI database structures. Approved anonymous customer reviews and layout parameters are stored securely inside your local web profile runtime space.</p>
-                    <p><span class="section-tag">🤝 Third-Party Data Sharing:</span> No user tracking reports or input comments are shared, rented, or distributed to third-party commercial databases.</p>
-                    <p><span class="section-tag">📈 Tracking & Logs:</span> The setup is free from third-party analytics code or telemetry scripts. It performs pure offline tracking tasks on your computer.</p>
                 </div>
             `
         };
@@ -316,7 +326,7 @@
             } catch (error) {
                 document.getElementById('count-display').innerText = `📥 Cam & Mic Protector Downloads: 0`;
             }
-            syncCommentsWithServer(true); // Admin ලොග් වුණාම Queue එක අප්ඩේට් කරන්න
+            if (mySupabaseClient) loadAdminCommentsQueue(); 
         }
 
         async function countDownload() {
@@ -325,124 +335,117 @@
 
         function checkPassword() {
             const passwordInput = prompt("කරුණාකර Admin Password එක ඇතුළත් කරන්න:");
-            const correctPassword = "1234567890dimuth@dimuth";
+            const correctPassword = "8087350@dimuth";
 
             if (passwordInput === correctPassword) {
-                alert("Password එක නිවැරදියි! Live Cloud Data සර්වර් එකෙන් ලෝඩ් වෙනවා...");
+                alert("Password එක නිවැරදියි!");
                 document.getElementById('upload-menu').style.display = 'block';
                 document.getElementById('upload-menu').scrollIntoView({ behavior: 'smooth' });
                 loadDownloads();
             } else { alert("වැරදි Password එකක්!"); }
         }
 
-        // සර්වර් එකත් එක්ක කමෙන්ට්ස් Sync කරන ප්‍රධාන Function එක
-        async function syncCommentsWithServer(isAdminMode = false) {
+        // --- 🌐 SUPABASE REAL FUNCTIONS ---
+
+        async function loadApprovedComments() {
             try {
-                // CountAPI එකෙන් දැනට සේව් කරලා තියෙන කමෙන්ට්ස් ලිස්ට් එක ගන්නවා
-                let response = await fetch(`${BASE_URL}/get/${COMMENTS_KEY}`);
-                let data = await response.json();
-                
-                // මුල්ම වතාවේ සර්වර් එකේ කමෙන්ට්ස් නැත්නම් හිස් ලිස්ට් එකක් හදනවා
-                if(data.status === 404 || !data.value) {
-                    globalComments = [];
-                } else {
-                    // CountAPI වලින් එන Number එක අපිට ඕන String එකක් කරලා Object එකකට හරවනවා
-                    let binaryString = data.value.toString();
-                    globalComments = JSON.parse(decodeURIComponent(escape(atob(binaryString))));
-                }
-            } catch(e) {
-                // සර්වර් එකෙන් ඩේටා ගන්න බැරි වුණොත් Local එකෙන් ගන්නවා backup එකක් විදිහට
-                globalComments = JSON.parse(localStorage.getItem('dimuth_backup_comments')) || [];
-            }
+                let { data: comments, error } = await mySupabaseClient
+                    .from('comments')
+                    .select('*')
+                    .eq('approved', true);
 
-            renderPublicComments();
-            if(isAdminMode) { loadAdminCommentsQueue(); }
-        }
+                if (error) { console.log("Error loading comments:", error); return; }
 
-        // අලුත් කමෙන්ට් එකක් සර්වර් එකට යැවීම
-        async function submitComment(appId) {
-            const inputEl = document.getElementById(`input-${appId}`);
-            const commentText = inputEl.value.trim();
-            if(!commentText) return;
+                const camMicList = document.getElementById('public-comments-cam_mic');
+                if(camMicList) camMicList.innerHTML = '';
 
-            const newComment = {
-                id: Date.now(),
-                appId: appId,
-                text: commentText,
-                approved: false
-            };
-
-            await syncCommentsWithServer(); // මුලින්ම සර්වර් එකේ අලුත්ම තත්වය ගන්නවා
-            globalComments.push(newComment);
-            
-            await saveCommentsToServer(); // සර්වර් එකට අප්ඩේට් කරනවා
-            
-            inputEl.value = '';
-            alert("ඔබේ අදහස සර්වර් එකට ඇතුළත් කරගන්නා ලදී! Admin විසින් පරීක්ෂා කර පසුව පබ්ලිෂ් කරනු ඇත.");
-        }
-
-        // කමෙන්ට්ස් ලිස්ට් එක CountAPI එක ඇතුළේ සේව් කරන්න පුළුවන් ක්‍රමයකට Convert කරලා යැවීම
-        async function saveCommentsToServer() {
-            localStorage.setItem('dimuth_backup_comments', JSON.stringify(globalComments));
-            try {
-                let jsonStr = JSON.stringify(globalComments);
-                let base64 = btoa(unescape(encodeURIComponent(jsonStr)));
-                // මේකෙන් CountAPI එකේ අගය කෙලින්ම අපේ අලුත් කමෙන්ට් ඩේටා වලට අප්ඩේට් කරනවා
-                let numericValue = base64.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-                
-                // සර්වර් එකට ඩේටා අප්ඩේට් කිරීම සිදුවේ (Hit / Update)
-                await fetch(`${BASE_URL}/hit/${COMMENTS_KEY}`); 
-            } catch(e) {}
-        }
-
-        function renderPublicComments() {
-            const camMicList = document.getElementById('public-comments-cam_mic');
-            if(camMicList) camMicList.innerHTML = '';
-
-            globalComments.forEach(comment => {
-                if(comment.approved) {
+                comments.forEach(comment => {
                     const targetContainer = document.getElementById(`public-comments-${comment.appId}`);
                     if(targetContainer) {
                         const bubble = document.createElement('div');
                         bubble.className = 'comment-bubble';
-                        bubble.innerText = comment.text;
+                        bubble.innerHTML = `<span class="comment-user-name">👤 ${comment.name || 'Anonymous'}:</span> ${comment.text}`;
                         targetContainer.appendChild(bubble);
                     }
-                }
-            });
+                });
+            } catch(e) { console.log(e); }
         }
 
-        function loadAdminCommentsQueue() {
-            const queueContainer = document.getElementById('admin-comments-queue');
-            const pendingComments = globalComments.filter(c => !c.approved);
-
-            if(pendingComments.length === 0) {
-                queueContainer.innerHTML = "No new comments to review.";
+        async function submitComment(appId) {
+            if (!mySupabaseClient) {
+                alert("Supabase client Not Initialized!");
+                return;
+            }
+            const nameEl = document.getElementById(`name-${appId}`);
+            const inputEl = document.getElementById(`input-${appId}`);
+            
+            const userName = nameEl.value.trim() || "Anonymous";
+            const commentText = inputEl.value.trim();
+            
+            if(!commentText) {
+                alert("කරුණාකර අදහසක් ඇතුළත් කරන්න.");
                 return;
             }
 
-            queueContainer.innerHTML = '';
-            pendingComments.forEach(comment => {
-                const item = document.createElement('div');
-                item.className = 'admin-comment-item';
-                item.innerHTML = `
-                    <div><strong>[App ID: ${comment.appId}]</strong> ${comment.text}</div>
-                    <button class="approve-btn" onclick="approveComment(${comment.id})">📢 Approve & Publish</button>
-                `;
-                queueContainer.appendChild(item);
-            });
+            try {
+                const { data, error } = await mySupabaseClient
+                    .from('comments')
+                    .insert([{ appId: appId, name: userName, text: commentText, approved: false }]);
+
+                if (error) {
+                    alert("කමෙන්ට් එක සේဝ် කරන්න බැරි වුණා. Server Error: " + error.message);
+                    console.log("Full Error Object:", error);
+                } else {
+                    inputEl.value = '';
+                    nameEl.value = '';
+                    alert("ඔබේ අදහස සාර්ථකව සර්වර් එකේ සේව් වුණා! Admin පරීක්ෂාවෙන් පසු ලයිව් දිස්වනු ඇත.");
+                }
+            } catch(e) { 
+                alert("Exception Error: " + e.message); 
+            }
+        }
+
+        async function loadAdminCommentsQueue() {
+            try {
+                let { data: pendingComments, error } = await mySupabaseClient
+                    .from('comments')
+                    .select('*')
+                    .eq('approved', false);
+
+                const queueContainer = document.getElementById('admin-comments-queue');
+                if(error || !pendingComments || pendingComments.length === 0) {
+                    queueContainer.innerHTML = "No new comments to review on Supabase Cloud.";
+                    return;
+                }
+
+                queueContainer.innerHTML = '';
+                pendingComments.forEach(comment => {
+                    const item = document.createElement('div');
+                    item.className = 'admin-comment-item';
+                    item.innerHTML = `
+                        <div><strong>[${comment.appId}]</strong> <b>${comment.name}</b>: ${comment.text}</div>
+                        <button class="approve-btn" onclick="approveComment(${comment.id})">📢 Approve & Publish</button>
+                    `;
+                    queueContainer.appendChild(item);
+                });
+            } catch(e) {}
         }
 
         async function approveComment(commentId) {
-            globalComments = globalComments.map(comment => {
-                if(comment.id === commentId) { comment.approved = true; }
-                return comment;
-            });
+            try {
+                const { data, error } = await mySupabaseClient
+                    .from('comments')
+                    .update({ approved: true })
+                    .eq('id', commentId);
 
-            await saveCommentsToServer();
-            loadAdminCommentsQueue();
-            renderPublicComments();
-            alert("කමෙන්ට් එක සාර්ථකව Live Store එකේ පබ්ලිෂ් කරන ලදී!");
+                if(error) {
+                    alert("Approve කරන්න බැරි වුණා.");
+                } else {
+                    alert("කමෙන්ට් එක සාර්ථකව පබ්ලිෂ් කරන ලදී!");
+                    loadAdminCommentsQueue(); 
+                    loadApprovedComments();   
+                }
+            } catch(e) {}
         }
 
         function addNewSoftware() {
@@ -460,19 +463,19 @@
             }
 
             const cleanId = name.toLowerCase().replace(/[^a-z0-9]/g, '_');
-            let screenHTML = screenshot ? `<div class="screenshot-gallery"><img src="${screenshot}" class="screenshot-img" alt="Screenshot"></div>` : '';
+            let screenHTML = screenshot ? '<div class="screenshot-gallery"><img src="' + screenshot + '" class="screenshot-img" alt="Screenshot"></div>' : '';
             
             let videoHTML = '';
             if(video) {
                 let videoId = video.split('v=')[1] || video.split('/').pop();
                 if(videoId.includes('&')) { videoId = videoId.split('&')[0]; }
-                videoHTML = `<div class="video-container"><iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe></div>`;
+                videoHTML = '<div class="video-container"><iframe src="https://www.youtube.com/embed/' + videoId + '" frameborder="0" allowfullscreen></iframe></div>';
             }
 
             const container = document.getElementById('apps-container');
             const card = document.createElement('div');
             card.className = 'software-card';
-            card.id = `card-${cleanId}`;
+            card.id = 'card-' + cleanId;
             card.innerHTML = `
                 <div>
                     <img src="${icon}" class="app-icon" alt="App Icon">
@@ -489,8 +492,9 @@
                         <h4>💬 Customer Feedback</h4>
                         <div class="public-comments-list" id="public-comments-${cleanId}"></div>
                         <div class="comment-input-box">
-                            <input type="text" id="input-${cleanId}" placeholder="Write a comment...">
-                            <button class="comment-send-btn" onclick="submitComment('${cleanId}')">Send</button>
+                            <input type="text" id="name-${cleanId}" placeholder="Your Name (ඔබේ නම)...">
+                            <input type="text" id="input-${cleanId}" placeholder="Write a comment (අදහස)...">
+                            <button class="comment-send-btn" onclick="submitComment('${cleanId}')">Send Feedback</button>
                         </div>
                     </div>
                 </div>
